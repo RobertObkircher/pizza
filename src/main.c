@@ -16,9 +16,19 @@ int bit_count(unsigned long long n) {
     return counter;
 }
 
+void *malloc_or_exit(size_t size) {
+    void *result = malloc(size);
+    if (!result) {
+        printf("out of memory: unable to allocate %d bytes", size);
+        exit(1);
+    }
+    return result;
+}
+
+
 int main() {
 
-    int file_index = 0;
+    int file_index = 3;
     const char *files[] = {
             "inputs/a_example.in",
             "inputs/b_small.in",
@@ -36,7 +46,7 @@ int main() {
     int R, C, L, H;
     fscanf(file, "%d %d %d %d\n", &R, &C, &L, &H);
 
-    char *pizza = malloc(R * C * sizeof(char));
+    char *pizza = malloc_or_exit(R * C * sizeof(char));
     {
         for (int row = 0; row < R; ++row) {
             for (int col = 0; col < C; ++col) {
@@ -64,7 +74,7 @@ int main() {
                 }
             }
         }
-        shapes = malloc(sizeof(Shape) * number_of_shapes);
+        shapes = malloc_or_exit(sizeof(Shape) * number_of_shapes);
         number_of_shapes = 0;
         for (int x = 1; x <= H; ++x) {
             for (int y = 1; y <= H; ++y) {
@@ -79,7 +89,7 @@ int main() {
 //        }
     }
 
-    long long *possible_shapes = malloc(R * C * sizeof(long long));
+    long long *possible_shapes = malloc_or_exit(R * C * sizeof(long long));
     {
         for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
             for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
