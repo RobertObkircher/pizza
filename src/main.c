@@ -7,6 +7,10 @@ typedef struct {
     int height;
 } Shape;
 
+typedef struct {
+    int r1, r2, c1, c2;
+} Slice;
+
 int bit_count(unsigned long long n) {
     int counter = 0;
     while (n) {
@@ -25,15 +29,29 @@ void *malloc_or_exit(size_t size) {
     return result;
 }
 
+void run(int);
 
 int main() {
+    run(0);
+    run(1);
+    run(2);
+    run(3);
 
-    int file_index = 3;
+    return 0;
+}
+
+void run(int file_index) {
     const char *files[] = {
             "inputs/a_example.in",
             "inputs/b_small.in",
             "inputs/c_medium.in",
             "inputs/d_big.in",
+    };
+    const char *output_files[] = {
+            "inputs/a_example.out",
+            "inputs/b_small.out",
+            "inputs/c_medium.out",
+            "inputs/d_big.out",
     };
 
     printf("file: %s\n", files[file_index]);
@@ -63,6 +81,7 @@ int main() {
 //            printf("\n");
 //        }
     }
+    fclose(file);
 
     int number_of_shapes = 0;
     Shape *shapes;
@@ -129,15 +148,19 @@ int main() {
        the border counts as num_shapes possible shapes
      pick shape with largest sum of neighbours
      */
+    int max_slices = 1024;
+    int num_slices = 0;
+    Slice *slices = malloc_or_exit(max_slices * sizeof(Slice));
     for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
         for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
             int pizza_index = pizza_row * C + pizza_col;
-            if (!possible_shapes[pizza_index])
+            long long bits = possible_shapes[pizza_index];
+            if (!bits)
                 continue;
             Shape *best_shape = NULL;
             int best_shape_score = -1;
             for (int i = 0; i < number_of_shapes; ++i) {
-                if (!possible_shapes[pizza_index] & (1 << i))
+                if (!(bits & (1 << i)))
                     continue;
 
                 Shape *shape = &shapes[i];
@@ -154,17 +177,17 @@ int main() {
                     score += shape->height;
                 } else {
                     unsigned long long neighbours = 0;
-                    for (int y = 0; y < shape->height; ++y) {
+                    for (int y = 0; y < shape->height && pizza_row + y < R; ++y) {
                         neighbours |= possible_shapes[pizza_index + y * C + shape->width];
                     }
                     score += bit_count(neighbours);
                 }
 
-                if (shape->height + pizza_row == C) {
+                if (shape->height + pizza_row == R) {
                     score += shape->width;
                 } else {
                     unsigned long long neighbours = 0;
-                    for (int x = 0; x < shape->width; ++x) {
+                    for (int x = 0; x < shape->width && pizza_col + x < C; ++x) {
                         neighbours |= possible_shapes[pizza_index + x + shape->height * C];
                     }
                     score += bit_count(neighbours);
@@ -177,8 +200,22 @@ int main() {
             }
 
             if (best_shape) {
-                // TODO store shape in list
-                printf("crwh: %d %d %d %d\n", pizza_col, pizza_row, best_shape->width, best_shape->height);
+                if (num_slices + 1 > max_slices) {
+                    max_slices *= 2;
+//                    printf("realloc: %d\n", max_slices * sizeof(Slice));
+                    slices = realloc(slices, max_slices * sizeof(Slice));
+                    if (!slices) {
+                        printf("out of memory");
+                        exit(1);
+                    }
+                }
+                Slice *slice = slices + num_slices++;
+                slice->r1 = pizza_row;
+                slice->c1 = pizza_col;
+                slice->r2 = pizza_row + best_shape->width - 1;
+                slice->c2 = pizza_col + best_shape->height - 1;
+
+//                printf("crwh: %d %d %d %d\n", pizza_col, pizza_row, best_shape->width, best_shape->height);
                 for (int y = 0; y < best_shape->height; ++y) {
                     for (int x = 0; x < best_shape->width; ++x) {
                         possible_shapes[pizza_index + y * C + x] = 0;
@@ -189,7 +226,20 @@ int main() {
     }
 
 
+    FILE *output = fopen(output_files[file_index], "w");
+    if (!output) {
+        perror("Writing output");
+        exit(2);
+    }
+    fprintf(output, "%d\n", num_slices);
+    for (int i = 0; i < num_slices; ++i) {
+        Slice s = slices[i];
+        fprintf(output, "%d %d %d %d\n", s.r1, s.c1, s.r2, s.c2);
+    }
+    fclose(output);
+
+
+    free(possible_shapes);
     free(shapes);
     free(pizza);
-    return 0;
 }
