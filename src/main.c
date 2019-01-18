@@ -106,7 +106,7 @@ void run(int file_index) {
         }
         printf("%d Shapes\n", number_of_shapes);
 //        for (int i = 0; i < number_of_shapes; ++i) {
-//            printf("%d %d\n", shapes[i].width, shapes[i].height);
+//            printf("%2d: %d %d\n", i, shapes[i].width, shapes[i].height);
 //        }
     }
 
@@ -138,6 +138,20 @@ void run(int file_index) {
 //        for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
 //            for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
 //                printf("%8x ", possible_shapes[pizza_row * C + pizza_col]);
+//            }
+//            printf("\n");
+//        }
+
+//        for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
+//            for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
+//                printf("Row %2d, Col %2d: ", pizza_row, pizza_col);
+//                unsigned long long shape = possible_shapes[pizza_row * C + pizza_col];
+//                for (int i = 0; i < number_of_shapes; ++i) {
+//                    if (shape & (1 << i)) {
+//                        printf("(%d %d)", shapes[i].width, shapes[i].height);
+//                    }
+//                }
+//                printf("\n");
 //            }
 //            printf("\n");
 //        }
@@ -214,8 +228,8 @@ void run(int file_index) {
                 Slice *slice = slices + num_slices++;
                 slice->r1 = pizza_row;
                 slice->c1 = pizza_col;
-                slice->r2 = pizza_row + best_shape->width - 1;
-                slice->c2 = pizza_col + best_shape->height - 1;
+                slice->r2 = pizza_row + best_shape->height - 1;
+                slice->c2 = pizza_col + best_shape->width - 1;
 
 //                printf("crwh: %d %d %d %d\n", pizza_col, pizza_row, best_shape->width, best_shape->height);
                 for (int y = 0; y < best_shape->height; ++y) {
@@ -223,6 +237,21 @@ void run(int file_index) {
                         possible_shapes[pizza_index + y * C + x] = 0;
                     }
                 }
+
+//                printf("the best shape at pos (%d, %d) was (%d %d)\n", pizza_row, pizza_col, best_shape->width, best_shape->height);
+//                for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
+//                    for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
+//                        printf("Row %2d, Col %2d: ", pizza_row, pizza_col);
+//                        unsigned long long shape = possible_shapes[pizza_row * C + pizza_col];
+//                        for (int i = 0; i < number_of_shapes; ++i) {
+//                            if (shape & (1 << i)) {
+//                                printf("(%d %d)", shapes[i].width, shapes[i].height);
+//                            }
+//                        }
+//                        printf("\n");
+//                    }
+//                    printf("\n");
+//                }
             }
         }
     }
