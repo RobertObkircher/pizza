@@ -163,6 +163,9 @@ void run(int file_index) {
                     unsigned long long neighbours = 0;
                     for (int y = 0; y < shape->height && pizza_row + y < R; ++y) {
                         neighbours |= possible_shapes[pizza_index + y * C + shape->width].shape_flags;
+//                        if (possible_shapes[pizza_index + y * C + shape->width].shape_flags) {
+//                            ++score;
+//                        }
                     }
                     score += bit_count(neighbours);
                 }
@@ -173,6 +176,9 @@ void run(int file_index) {
                     unsigned long long neighbours = 0;
                     for (int x = 0; x < shape->width && pizza_col + x < C; ++x) {
                         neighbours |= possible_shapes[pizza_index + x + shape->height * C].shape_flags;
+//                        if(possible_shapes[pizza_index + x + shape->height * C].shape_flags) {
+//                            ++score;
+//                        }
                     }
                     score += bit_count(neighbours);
                 }
