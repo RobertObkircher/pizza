@@ -11,6 +11,11 @@ typedef struct {
     int r1, r2, c1, c2;
 } Slice;
 
+typedef struct {
+    int is_used : 1;
+    unsigned long long shape_flags : 63;
+} Data;
+
 int bit_count(unsigned long long n) {
     int counter = 0;
     while (n) {
@@ -74,12 +79,6 @@ void run(int file_index) {
         }
 
         printf("RCLH %d %d %d %d\n", R, C, L, H);
-//        for (int row = 0; row < R; ++row) {
-//            for (int col = 0; col < C; ++col) {
-//                printf("%c", *(pizza + row * C + col));
-//            }
-//            printf("\n");
-//        }
     }
     fclose(file);
 
@@ -105,17 +104,14 @@ void run(int file_index) {
             }
         }
         printf("%d Shapes\n", number_of_shapes);
-//        for (int i = 0; i < number_of_shapes; ++i) {
-//            printf("%2d: %d %d\n", i, shapes[i].width, shapes[i].height);
-//        }
     }
 
-    long long *possible_shapes = malloc_or_exit(R * C * sizeof(long long));
+    Data *possible_shapes = malloc_or_exit(R * C * sizeof(Data));
     {
         for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
             for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
                 int pizza_index = pizza_row * C + pizza_col;
-                possible_shapes[pizza_index] = 0;
+                possible_shapes[pizza_index] = (Data) {};
                 for (int i = 0; i < number_of_shapes; ++i) {
                     Shape shape = shapes[i];
                     if (shape.width + pizza_col > C || shape.height + pizza_row > R)
@@ -129,48 +125,20 @@ void run(int file_index) {
                         }
                     }
                     if (mushrooms >= L && shape.width * shape.height - mushrooms >= L) {
-                        possible_shapes[pizza_index] |= 1 << i;
+                        possible_shapes[pizza_index].shape_flags |= 1 << i;
                     }
                 }
             }
         }
-
-//        for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
-//            for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
-//                printf("%8x ", possible_shapes[pizza_row * C + pizza_col]);
-//            }
-//            printf("\n");
-//        }
-
-//        for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
-//            for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
-//                printf("Row %2d, Col %2d: ", pizza_row, pizza_col);
-//                unsigned long long shape = possible_shapes[pizza_row * C + pizza_col];
-//                for (int i = 0; i < number_of_shapes; ++i) {
-//                    if (shape & (1 << i)) {
-//                        printf("(%d %d)", shapes[i].width, shapes[i].height);
-//                    }
-//                }
-//                printf("\n");
-//            }
-//            printf("\n");
-//        }
     }
 
-    /*
-     for all shapes
-       compute number of shapes to the right
-       compute number of shapes below
-       the border counts as num_shapes possible shapes
-     pick shape with largest sum of neighbours
-     */
     int max_slices = 1024;
     int num_slices = 0;
     Slice *slices = malloc_or_exit(max_slices * sizeof(Slice));
     for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
         for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
             int pizza_index = pizza_row * C + pizza_col;
-            long long bits = possible_shapes[pizza_index];
+            unsigned long long bits = possible_shapes[pizza_index].shape_flags;
             if (!bits)
                 continue;
             Shape *best_shape = NULL;
@@ -194,7 +162,7 @@ void run(int file_index) {
                 } else {
                     unsigned long long neighbours = 0;
                     for (int y = 0; y < shape->height && pizza_row + y < R; ++y) {
-                        neighbours |= possible_shapes[pizza_index + y * C + shape->width];
+                        neighbours |= possible_shapes[pizza_index + y * C + shape->width].shape_flags;
                     }
                     score += bit_count(neighbours);
                 }
@@ -204,7 +172,7 @@ void run(int file_index) {
                 } else {
                     unsigned long long neighbours = 0;
                     for (int x = 0; x < shape->width && pizza_col + x < C; ++x) {
-                        neighbours |= possible_shapes[pizza_index + x + shape->height * C];
+                        neighbours |= possible_shapes[pizza_index + x + shape->height * C].shape_flags;
                     }
                     score += bit_count(neighbours);
                 }
@@ -213,7 +181,7 @@ void run(int file_index) {
                     int shape_can_be_placed = 1;
                     for (int y = 0; shape_can_be_placed && y < shape->height; ++y) {
                         for (int x = 0; shape_can_be_placed && x < shape->width; ++x) {
-                            shape_can_be_placed = 0 != possible_shapes[pizza_index + y * C + x];
+                            shape_can_be_placed = !possible_shapes[pizza_index + y * C + x].is_used;
                         }
                     }
                     if (shape_can_be_placed) {
@@ -226,7 +194,6 @@ void run(int file_index) {
             if (best_shape) {
                 if (num_slices + 1 > max_slices) {
                     max_slices *= 2;
-//                    printf("realloc: %d\n", max_slices * sizeof(Slice));
                     slices = realloc(slices, max_slices * sizeof(Slice));
                     if (!slices) {
                         printf("out of memory");
@@ -239,27 +206,11 @@ void run(int file_index) {
                 slice->r2 = pizza_row + best_shape->height - 1;
                 slice->c2 = pizza_col + best_shape->width - 1;
 
-//                printf("crwh: %d %d %d %d\n", pizza_col, pizza_row, best_shape->width, best_shape->height);
                 for (int y = 0; y < best_shape->height; ++y) {
                     for (int x = 0; x < best_shape->width; ++x) {
-                        possible_shapes[pizza_index + y * C + x] = 0;
+                        possible_shapes[pizza_index + y * C + x].is_used = 1;
                     }
                 }
-
-//                printf("the best shape at pos (%d, %d) was (%d %d)\n", pizza_row, pizza_col, best_shape->width, best_shape->height);
-//                for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
-//                    for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
-//                        printf("Row %2d, Col %2d: ", pizza_row, pizza_col);
-//                        unsigned long long shape = possible_shapes[pizza_row * C + pizza_col];
-//                        for (int i = 0; i < number_of_shapes; ++i) {
-//                            if (shape & (1 << i)) {
-//                                printf("(%d %d)", shapes[i].width, shapes[i].height);
-//                            }
-//                        }
-//                        printf("\n");
-//                    }
-//                    printf("\n");
-//                }
             }
         }
     }
