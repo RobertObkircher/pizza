@@ -210,8 +210,16 @@ void run(int file_index) {
                 }
 
                 if (score > best_shape_score) {
-                    best_shape_score = score;
-                    best_shape = shape;
+                    int shape_can_be_placed = 1;
+                    for (int y = 0; shape_can_be_placed && y < shape->height; ++y) {
+                        for (int x = 0; shape_can_be_placed && x < shape->width; ++x) {
+                            shape_can_be_placed = 0 != possible_shapes[pizza_index + y * C + x];
+                        }
+                    }
+                    if (shape_can_be_placed) {
+                        best_shape_score = score;
+                        best_shape = shape;
+                    }
                 }
             }
 
