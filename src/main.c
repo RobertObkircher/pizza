@@ -88,7 +88,8 @@ void run(int file_index) {
     {
         for (int x = 1; x <= H; ++x) {
             for (int y = 1; y <= H; ++y) {
-                if (x * y <= H) {
+                int area = x * y;
+                if (area <= H && area >= 2 * L) {
                     ++number_of_shapes;
                 }
             }
@@ -97,7 +98,8 @@ void run(int file_index) {
         number_of_shapes = 0;
         for (int x = 1; x <= H; ++x) {
             for (int y = 1; y <= H; ++y) {
-                if (x * y <= H) {
+                int area = x * y;
+                if (area <= H && area >= 2 * L) {
                     shapes[number_of_shapes++] = (Shape) {.width = x, .height=y};
                 }
             }
