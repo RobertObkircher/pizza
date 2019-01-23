@@ -53,20 +53,19 @@ const char *files[] = {
         "d_big",
 };
 
-char* file_path(char* folder, int file_index, char* extension) {
-    char *result = malloc_or_exit(1024);
-    sprintf(result, "%s/%s%s", folder, files[file_index], extension);
-    return result;
+FILE *open_file_or_exit(char *folder, int file_index, char *extension, char *mode) {
+    char path[1024];
+    sprintf(path, "%s/%s%s", folder, files[file_index], extension);
+    FILE *file = fopen(path, mode);
+    if (!file) {
+        printf("Unable to open file %s\n", path);
+        exit(1);
+    }
+    return file;
 }
 
 void run(int file_index) {
-    printf("file: %s\n", files[file_index]);
-    FILE *file = fopen(file_path("inputs", file_index, ".in"), "r");
-    if (!file) {
-        printf("Unable to open file!");
-        exit(1);
-    }
-
+    FILE *file = open_file_or_exit("inputs", file_index, ".in", "r");
     int R, C, L, H;
     fscanf(file, "%d %d %d %d\n", &R, &C, &L, &H);
 
@@ -134,7 +133,7 @@ void run(int file_index) {
     }
 
     {
-        FILE *fp = fopen(file_path("inputs", file_index, "_possible.png"), "wb");
+        FILE *fp = open_file_or_exit("inputs", file_index, "_possible.png", "wb");
         png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
         png_infop info_ptr = png_create_info_struct(png_ptr);
         png_init_io(png_ptr, fp);
@@ -152,7 +151,7 @@ void run(int file_index) {
                 int pizza_index = pizza_row * C + pizza_col;
                 Data d = possible_shapes[pizza_index];
                 int c = bit_count(d.shape_flags);
-                if( c > max_bit_count)
+                if (c > max_bit_count)
                     max_bit_count = c;
             }
         }
@@ -264,11 +263,7 @@ void run(int file_index) {
     }
 
     {
-        FILE *output = fopen(file_path("inputs", file_index, ".out"), "w");
-        if (!output) {
-            perror("Writing output");
-            exit(2);
-        }
+        FILE *output = open_file_or_exit("inputs", file_index, ".out", "w");
         fprintf(output, "%d\n", num_slices);
         for (int i = 0; i < num_slices; ++i) {
             Slice s = slices[i];
@@ -278,7 +273,7 @@ void run(int file_index) {
     }
 
     {
-        FILE *fp = fopen(file_path("inputs", file_index, "_leftovers.png"), "wb");
+        FILE *fp = open_file_or_exit("inputs", file_index, "_leftovers.png", "wb");
         png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
         png_infop info_ptr = png_create_info_struct(png_ptr);
         png_init_io(png_ptr, fp);
