@@ -38,11 +38,14 @@ void *malloc_or_exit(size_t size) {
 void run(int);
 
 int main() {
+    clock_t start = clock();
     run(0);
     run(1);
     run(2);
     run(3);
-
+    clock_t end = clock();
+    double elapsed = (end - start) / (double) CLOCKS_PER_SEC;
+    printf("Elapsed time: %.4f\n", elapsed);
     return 0;
 }
 
