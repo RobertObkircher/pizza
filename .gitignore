@@ -136,3 +136,5 @@ fabric.properties
 .idea/sonarlint
 
 # End of https://www.gitignore.io/api/c,clion
+
+inputs/*

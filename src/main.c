@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <png.h>
 
 typedef struct {
     int width;
@@ -57,6 +58,12 @@ void run(int file_index) {
             "inputs/b_small.out",
             "inputs/c_medium.out",
             "inputs/d_big.out",
+    };
+    const char *leftovers_files[] = {
+            "inputs/a_example.png",
+            "inputs/b_small.png",
+            "inputs/c_medium.png",
+            "inputs/d_big.png",
     };
 
     printf("file: %s\n", files[file_index]);
@@ -221,18 +228,45 @@ void run(int file_index) {
         }
     }
 
+    {
+        FILE *output = fopen(output_files[file_index], "w");
+        if (!output) {
+            perror("Writing output");
+            exit(2);
+        }
+        fprintf(output, "%d\n", num_slices);
+        for (int i = 0; i < num_slices; ++i) {
+            Slice s = slices[i];
+            fprintf(output, "%d %d %d %d\n", s.r1, s.c1, s.r2, s.c2);
+        }
+        fclose(output);
+    }
 
-    FILE *output = fopen(output_files[file_index], "w");
-    if (!output) {
-        perror("Writing output");
-        exit(2);
+    { // Write unused parts to png. No error handling.
+        FILE *fp = fopen(leftovers_files[file_index], "wb");
+        png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+        png_infop info_ptr = png_create_info_struct(png_ptr);
+        png_init_io(png_ptr, fp);
+        int bit_depth = 8;
+        int color_type = PNG_COLOR_TYPE_GRAY;
+        png_set_IHDR(png_ptr, info_ptr, C, R,
+                     bit_depth, color_type, PNG_INTERLACE_NONE,
+                     PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+        png_write_info(png_ptr, info_ptr);
+
+        png_bytep row = malloc_or_exit(C);
+        for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
+            for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
+                int pizza_index = pizza_row * C + pizza_col;
+                Data d = possible_shapes[pizza_index];
+                row[pizza_col] = (unsigned char) (d.is_used ? 0 : -1);
+            }
+            png_write_row(png_ptr, row);
+        }
+
+        png_write_end(png_ptr, NULL);
+        fclose(fp);
     }
-    fprintf(output, "%d\n", num_slices);
-    for (int i = 0; i < num_slices; ++i) {
-        Slice s = slices[i];
-        fprintf(output, "%d %d %d %d\n", s.r1, s.c1, s.r2, s.c2);
-    }
-    fclose(output);
 
 
     free(possible_shapes);
