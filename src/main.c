@@ -133,6 +133,47 @@ void run(int file_index) {
         }
     }
 
+    {
+        FILE *fp = fopen(file_path("inputs", file_index, "_possible.png"), "wb");
+        png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+        png_infop info_ptr = png_create_info_struct(png_ptr);
+        png_init_io(png_ptr, fp);
+        int bit_depth = 8;
+        int color_type = PNG_COLOR_TYPE_GRAY;
+        png_set_IHDR(png_ptr, info_ptr, C, R,
+                     bit_depth, color_type, PNG_INTERLACE_NONE,
+                     PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+        png_write_info(png_ptr, info_ptr);
+
+        png_bytep row = malloc_or_exit(C);
+        int max_bit_count = 0;
+        for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
+            for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
+                int pizza_index = pizza_row * C + pizza_col;
+                Data d = possible_shapes[pizza_index];
+                int c = bit_count(d.shape_flags);
+                if( c > max_bit_count)
+                    max_bit_count = c;
+            }
+        }
+        for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
+            for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
+                int pizza_index = pizza_row * C + pizza_col;
+                Data d = possible_shapes[pizza_index];
+                int c = bit_count(d.shape_flags);
+                if (c == 0) {
+                    row[pizza_col] = 0;
+                } else {
+                    row[pizza_col] = (unsigned char) (127 + bit_count(d.shape_flags) * 127 / max_bit_count);
+                }
+            }
+            png_write_row(png_ptr, row);
+        }
+
+        png_write_end(png_ptr, NULL);
+        fclose(fp);
+    }
+
     int max_slices = 1024;
     int num_slices = 0;
     Slice *slices = malloc_or_exit(max_slices * sizeof(Slice));
@@ -236,7 +277,7 @@ void run(int file_index) {
         fclose(output);
     }
 
-    { // Write unused parts to png. No error handling.
+    {
         FILE *fp = fopen(file_path("inputs", file_index, "_leftovers.png"), "wb");
         png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
         png_infop info_ptr = png_create_info_struct(png_ptr);
