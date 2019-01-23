@@ -46,28 +46,22 @@ int main() {
     return 0;
 }
 
-void run(int file_index) {
-    const char *files[] = {
-            "inputs/a_example.in",
-            "inputs/b_small.in",
-            "inputs/c_medium.in",
-            "inputs/d_big.in",
-    };
-    const char *output_files[] = {
-            "inputs/a_example.out",
-            "inputs/b_small.out",
-            "inputs/c_medium.out",
-            "inputs/d_big.out",
-    };
-    const char *leftovers_files[] = {
-            "inputs/a_example.png",
-            "inputs/b_small.png",
-            "inputs/c_medium.png",
-            "inputs/d_big.png",
-    };
+const char *files[] = {
+        "a_example",
+        "b_small",
+        "c_medium",
+        "d_big",
+};
 
+char* file_path(char* folder, int file_index, char* extension) {
+    char *result = malloc_or_exit(1024);
+    sprintf(result, "%s/%s%s", folder, files[file_index], extension);
+    return result;
+}
+
+void run(int file_index) {
     printf("file: %s\n", files[file_index]);
-    FILE *file = fopen(files[file_index], "r");
+    FILE *file = fopen(file_path("inputs", file_index, ".in"), "r");
     if (!file) {
         printf("Unable to open file!");
         exit(1);
@@ -229,7 +223,7 @@ void run(int file_index) {
     }
 
     {
-        FILE *output = fopen(output_files[file_index], "w");
+        FILE *output = fopen(file_path("inputs", file_index, ".out"), "w");
         if (!output) {
             perror("Writing output");
             exit(2);
@@ -243,7 +237,7 @@ void run(int file_index) {
     }
 
     { // Write unused parts to png. No error handling.
-        FILE *fp = fopen(leftovers_files[file_index], "wb");
+        FILE *fp = fopen(file_path("inputs", file_index, "_leftovers.png"), "wb");
         png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
         png_infop info_ptr = png_create_info_struct(png_ptr);
         png_init_io(png_ptr, fp);
