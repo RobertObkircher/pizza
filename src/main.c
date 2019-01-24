@@ -13,11 +13,12 @@ typedef struct {
 } Slice;
 
 typedef struct {
-    int is_used : 1;
-    unsigned long long shape_flags : 63;
+    unsigned int is_used : 1;
+    unsigned int shape_flags : 9;
+    unsigned int num_shapes : 22;
 } Data;
 
-int bit_count(unsigned long long n) {
+int bit_count(unsigned int n) {
     int counter = 0;
     while (n) {
         ++counter;
@@ -136,6 +137,67 @@ void run(int file_index) {
     }
 
     {
+        for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
+            for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
+                int pizza_index = pizza_row * C + pizza_col;
+                unsigned int bits = possible_shapes[pizza_index].shape_flags;
+                for (int i = 0; bits; ++i, bits >>= 1) {
+                    if (!(bits & 1))
+                        continue;
+                    Shape shape = shapes[i];
+                    for (int y = 0; y < shape.height; ++y) {
+                        for (int x = 0; x < shape.width; ++x) {
+                            possible_shapes[pizza_index + y * C + x].num_shapes += 1;
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+
+    {
+        FILE *fp = open_file_or_exit("inputs", file_index, "_num_shapes.png", "wb");
+        png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+        png_infop info_ptr = png_create_info_struct(png_ptr);
+        png_init_io(png_ptr, fp);
+        int bit_depth = 8;
+        int color_type = PNG_COLOR_TYPE_GRAY;
+        png_set_IHDR(png_ptr, info_ptr, C, R,
+                     bit_depth, color_type, PNG_INTERLACE_NONE,
+                     PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+        png_write_info(png_ptr, info_ptr);
+
+        png_bytep row = malloc_or_exit(C);
+        int max_num_shapes = 0;
+        for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
+            for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
+                int pizza_index = pizza_row * C + pizza_col;
+                Data d = possible_shapes[pizza_index];
+                int n = d.num_shapes;
+                if (n > max_num_shapes)
+                    max_num_shapes = d.num_shapes;
+            }
+        }
+        for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
+            for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
+                int pizza_index = pizza_row * C + pizza_col;
+                Data d = possible_shapes[pizza_index];
+                int n = d.num_shapes;
+                if (n == 0) {
+                    row[pizza_col] = 0;
+                } else {
+                    row[pizza_col] = (unsigned char) (127 + d.num_shapes * 127 / max_num_shapes);
+                }
+            }
+            png_write_row(png_ptr, row);
+        }
+
+        png_write_end(png_ptr, NULL);
+        fclose(fp);
+    }
+
+    {
         FILE *fp = open_file_or_exit("inputs", file_index, "_possible.png", "wb");
         png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
         png_infop info_ptr = png_create_info_struct(png_ptr);
@@ -182,7 +244,7 @@ void run(int file_index) {
     for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
         for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
             int pizza_index = pizza_row * C + pizza_col;
-            unsigned long long bits = possible_shapes[pizza_index].shape_flags;
+            unsigned int bits = possible_shapes[pizza_index].shape_flags;
             if (!bits)
                 continue;
             Shape *best_shape = NULL;
@@ -204,7 +266,7 @@ void run(int file_index) {
                 if (shape->width + pizza_col == C) {
                     score += shape->height;
                 } else {
-                    unsigned long long neighbours = 0;
+                    unsigned int neighbours = 0;
                     for (int y = 0; y < shape->height && pizza_row + y < R; ++y) {
                         neighbours |= possible_shapes[pizza_index + y * C + shape->width].shape_flags;
 //                        if (possible_shapes[pizza_index + y * C + shape->width].shape_flags) {
@@ -217,7 +279,7 @@ void run(int file_index) {
                 if (shape->height + pizza_row == R) {
                     score += shape->width;
                 } else {
-                    unsigned long long neighbours = 0;
+                    unsigned int neighbours = 0;
                     for (int x = 0; x < shape->width && pizza_col + x < C; ++x) {
                         neighbours |= possible_shapes[pizza_index + x + shape->height * C].shape_flags;
 //                        if(possible_shapes[pizza_index + x + shape->height * C].shape_flags) {
