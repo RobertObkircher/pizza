@@ -12,10 +12,12 @@ typedef struct {
     int r1, r2, c1, c2;
 } Slice;
 
+#define SHAPE_FLAGS_BITS 20
+#define NUM_SHAPES_BITS 11
 typedef struct {
     unsigned int is_used : 1;
-    unsigned int shape_flags : 9;
-    unsigned int num_shapes : 22;
+    unsigned int shape_flags : SHAPE_FLAGS_BITS;
+    unsigned int num_shapes : NUM_SHAPES_BITS;
 } Data;
 
 int bit_count(unsigned int n) {
@@ -108,6 +110,10 @@ void run(int file_index) {
             }
         }
         printf("%d Shapes\n", number_of_shapes);
+        if (SHAPE_FLAGS_BITS < number_of_shapes) {
+            printf("not enough shape_flags_bits\n");
+            exit(543);
+        }
     }
 
     Data *possible_shapes = malloc_or_exit(R * C * sizeof(Data));
