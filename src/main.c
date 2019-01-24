@@ -157,6 +157,27 @@ void run(int file_index) {
     }
 
     {
+        unsigned int buckets[1024] = {};
+        unsigned int num_buckets = 1024;
+
+        for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
+            for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
+                int pizza_index = pizza_row * C + pizza_col;
+                ++buckets[possible_shapes[pizza_index].num_shapes];
+            }
+        }
+
+        while (num_buckets && !buckets[num_buckets - 1])
+            --num_buckets;
+
+        printf("%d Buckets: ", num_buckets);
+        for (int i = 0; i < num_buckets; ++i) {
+            printf("%d,", buckets[i]);
+        }
+        printf("\n");
+    }
+
+    {
         FILE *fp = open_file_or_exit("inputs", file_index, "_num_shapes.png", "wb");
         png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
         png_infop info_ptr = png_create_info_struct(png_ptr);
