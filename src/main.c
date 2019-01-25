@@ -285,57 +285,19 @@ void run(int file_index) {
                         continue;
 
                     Shape *shape = &shapes[i];
-                    int score = 0;
 
-                    if (pizza_row == 0) {
-                        score += shape->width;
-                    }
-                    if (pizza_col == 0) {
-                        score += shape->height;
-                    }
-
-                    if (shape->width + pizza_col == C) {
-                        score += shape->height;
-                    } else {
-                        unsigned int neighbours = 0;
-                        for (int y = 0; y < shape->height && pizza_row + y < R; ++y) {
-                            neighbours |= possible_shapes[pizza_index + y * C + shape->width].shape_flags;
-//                        if (possible_shapes[pizza_index + y * C + shape->width].shape_flags) {
-//                            ++score;
-//                        }
-                        }
-                        score += bit_count(neighbours);
-                    }
-
-                    if (shape->height + pizza_row == R) {
-                        score += shape->width;
-                    } else {
-                        unsigned int neighbours = 0;
-                        for (int x = 0; x < shape->width && pizza_col + x < C; ++x) {
-                            neighbours |= possible_shapes[pizza_index + x + shape->height * C].shape_flags;
-//                        if(possible_shapes[pizza_index + x + shape->height * C].shape_flags) {
-//                            ++score;
-//                        }
-                        }
-                        score += bit_count(neighbours);
-                    }
-
-                    if (score > best_shape_score) {
-                        int shape_can_be_placed = 1;
-                        for (int y = 0; shape_can_be_placed && y < shape->height; ++y) {
-                            for (int x = 0; shape_can_be_placed && x < shape->width; ++x) {
-                                Data *data = &possible_shapes[pizza_index + y * C + x];
-                                shape_can_be_placed = !data->is_used;
-                                if (data->num_shapes > current_num_shapes) {
-                                    // a really weird place for this logic but it works.
-                                    score -= 2;
-                                }
+                    int shape_can_be_placed = 1;
+                    for (int y = 0; shape_can_be_placed && y < shape->height; ++y) {
+                        for (int x = 0; shape_can_be_placed && x < shape->width; ++x) {
+                            Data *data = &possible_shapes[pizza_index + y * C + x];
+                            shape_can_be_placed = !data->is_used;
+                            if (data->num_shapes > current_num_shapes) {
+                                // a really weird place for this logic but it works.
                             }
                         }
-                        if (shape_can_be_placed) {
-                            best_shape_score = score;
-                            best_shape = shape;
-                        }
+                    }
+                    if (shape_can_be_placed) {
+                        best_shape = shape;
                     }
                 }
 
