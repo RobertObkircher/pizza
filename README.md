@@ -8,10 +8,8 @@ The exact problem statement is in "pizza.pdf".
 Current score
 -------------
 
-- Example 15
+- Medium 49509 
 
-- Small 35
+- Big 897164 
 
-- Medium 48480, 49509 
-
-- Big 890445, 897164 
+(0.07 seconds for all 4 input files)
