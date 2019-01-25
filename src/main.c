@@ -101,8 +101,8 @@ void run(int file_index) {
         }
         shapes = malloc_or_exit(sizeof(Shape) * number_of_shapes);
         number_of_shapes = 0;
-        for (int x = 1; x <= H; ++x) {
-            for (int y = 1; y <= H; ++y) {
+        for (int x = H; x > 0; --x) {
+            for (int y = H; y > 0; --y) {
                 int area = x * y;
                 if (area <= H && area >= 2 * L) {
                     shapes[number_of_shapes++] = (Shape) {.width = x, .height=y};
@@ -268,58 +268,53 @@ void run(int file_index) {
     int max_slices = 1024;
     int num_slices = 0;
     Slice *slices = malloc_or_exit(max_slices * sizeof(Slice));
-    for (int current_num_shapes = 1; current_num_shapes <= max_num_shapes; ++current_num_shapes) {
-        for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
-            for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
-                int pizza_index = pizza_row * C + pizza_col;
-                Data *s = &possible_shapes[pizza_index];
-                if (s->is_used)
+    for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
+        for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
+            int pizza_index = pizza_row * C + pizza_col;
+            Data *s = &possible_shapes[pizza_index];
+            if (s->is_used)
+                continue;
+            unsigned int bits = s->shape_flags;
+            if (!bits)
+                continue;
+            Shape *best_shape = NULL;
+            for (int i = 0; bits; ++i, bits >>= 1) {
+                if (!(bits & 1))
                     continue;
-                unsigned int bits = s->shape_flags;
-                if (!bits)
-                    continue;
-                Shape *best_shape = NULL;
-                int best_shape_score = -1;
-                for (int i = 0; i < number_of_shapes; ++i) {
-                    if (!(bits & (1 << i)))
-                        continue;
 
-                    Shape *shape = &shapes[i];
+                Shape *shape = &shapes[i];
 
-                    int shape_can_be_placed = 1;
-                    for (int y = 0; shape_can_be_placed && y < shape->height; ++y) {
-                        for (int x = 0; shape_can_be_placed && x < shape->width; ++x) {
-                            Data *data = &possible_shapes[pizza_index + y * C + x];
-                            shape_can_be_placed = !data->is_used;
-                            if (data->num_shapes > current_num_shapes) {
-                                // a really weird place for this logic but it works.
-                            }
-                        }
-                    }
-                    if (shape_can_be_placed) {
-                        best_shape = shape;
+                int shape_can_be_placed = 1;
+                for (int y = 0; shape_can_be_placed && y < shape->height; ++y) {
+                    for (int x = 0; shape_can_be_placed && x < shape->width; ++x) {
+                        Data *data = &possible_shapes[pizza_index + y * C + x];
+                        shape_can_be_placed = !data->is_used;
                     }
                 }
+                if (shape_can_be_placed) {
+                    best_shape = shape;  // depends on the order of the shapes
+                    break;
+                }
+            }
 
-                if (best_shape) {
-                    if (num_slices + 1 > max_slices) {
-                        max_slices *= 2;
-                        slices = realloc(slices, max_slices * sizeof(Slice));
-                        if (!slices) {
-                            printf("out of memory");
-                            exit(1);
-                        }
+            if (best_shape) {
+                if (num_slices + 1 > max_slices) {
+                    max_slices *= 2;
+                    slices = realloc(slices, max_slices * sizeof(Slice));
+                    if (!slices) {
+                        printf("out of memory");
+                        exit(1);
                     }
-                    Slice *slice = slices + num_slices++;
-                    slice->r1 = pizza_row;
-                    slice->c1 = pizza_col;
-                    slice->r2 = pizza_row + best_shape->height - 1;
-                    slice->c2 = pizza_col + best_shape->width - 1;
+                }
+                Slice *slice = slices + num_slices++;
+                slice->r1 = pizza_row;
+                slice->c1 = pizza_col;
+                slice->r2 = pizza_row + best_shape->height - 1;
+                slice->c2 = pizza_col + best_shape->width - 1;
 
-                    for (int y = 0; y < best_shape->height; ++y) {
-                        for (int x = 0; x < best_shape->width; ++x) {
-                            possible_shapes[pizza_index + y * C + x].is_used = 1;
-                        }
+                for (int y = 0; y < best_shape->height; ++y) {
+                    for (int x = 0; x < best_shape->width; ++x) {
+                        possible_shapes[pizza_index + y * C + x].is_used = 1;
                     }
                 }
             }
