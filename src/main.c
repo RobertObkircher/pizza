@@ -183,6 +183,7 @@ void run(int file_index) {
         printf("\n");
     }
 
+    int max_num_shapes = 0;
     {
         FILE *fp = open_file_or_exit("inputs", file_index, "_num_shapes.png", "wb");
         png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
@@ -196,7 +197,6 @@ void run(int file_index) {
         png_write_info(png_ptr, info_ptr);
 
         png_bytep row = malloc_or_exit(C);
-        int max_num_shapes = 0;
         for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
             for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
                 int pizza_index = pizza_row * C + pizza_col;
@@ -268,91 +268,102 @@ void run(int file_index) {
     int max_slices = 1024;
     int num_slices = 0;
     Slice *slices = malloc_or_exit(max_slices * sizeof(Slice));
-    for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
-        for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
-            int pizza_index = pizza_row * C + pizza_col;
-            unsigned int bits = possible_shapes[pizza_index].shape_flags;
-            if (!bits)
-                continue;
-            Shape *best_shape = NULL;
-            int best_shape_score = -1;
-            for (int i = 0; i < number_of_shapes; ++i) {
-                if (!(bits & (1 << i)))
+    for (int current_num_shapes = 1; current_num_shapes <= max_num_shapes; ++current_num_shapes) {
+        for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
+            for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
+                int pizza_index = pizza_row * C + pizza_col;
+                Data *s = &possible_shapes[pizza_index];
+                if (s->is_used)
                     continue;
+                unsigned int bits = s->shape_flags;
+                if (!bits)
+                    continue;
+                Shape *best_shape = NULL;
+                int best_shape_score = -1;
+                for (int i = 0; i < number_of_shapes; ++i) {
+                    if (!(bits & (1 << i)))
+                        continue;
 
-                Shape *shape = &shapes[i];
-                int score = 0;
+                    Shape *shape = &shapes[i];
+                    int score = 0;
 
-                if (pizza_row == 0) {
-                    score += shape->width;
-                }
-                if (pizza_col == 0) {
-                    score += shape->height;
-                }
+                    if (pizza_row == 0) {
+                        score += shape->width;
+                    }
+                    if (pizza_col == 0) {
+                        score += shape->height;
+                    }
 
-                if (shape->width + pizza_col == C) {
-                    score += shape->height;
-                } else {
-                    unsigned int neighbours = 0;
-                    for (int y = 0; y < shape->height && pizza_row + y < R; ++y) {
-                        neighbours |= possible_shapes[pizza_index + y * C + shape->width].shape_flags;
+                    if (shape->width + pizza_col == C) {
+                        score += shape->height;
+                    } else {
+                        unsigned int neighbours = 0;
+                        for (int y = 0; y < shape->height && pizza_row + y < R; ++y) {
+                            neighbours |= possible_shapes[pizza_index + y * C + shape->width].shape_flags;
 //                        if (possible_shapes[pizza_index + y * C + shape->width].shape_flags) {
 //                            ++score;
 //                        }
+                        }
+                        score += bit_count(neighbours);
                     }
-                    score += bit_count(neighbours);
-                }
 
-                if (shape->height + pizza_row == R) {
-                    score += shape->width;
-                } else {
-                    unsigned int neighbours = 0;
-                    for (int x = 0; x < shape->width && pizza_col + x < C; ++x) {
-                        neighbours |= possible_shapes[pizza_index + x + shape->height * C].shape_flags;
+                    if (shape->height + pizza_row == R) {
+                        score += shape->width;
+                    } else {
+                        unsigned int neighbours = 0;
+                        for (int x = 0; x < shape->width && pizza_col + x < C; ++x) {
+                            neighbours |= possible_shapes[pizza_index + x + shape->height * C].shape_flags;
 //                        if(possible_shapes[pizza_index + x + shape->height * C].shape_flags) {
 //                            ++score;
 //                        }
+                        }
+                        score += bit_count(neighbours);
                     }
-                    score += bit_count(neighbours);
-                }
 
-                if (score > best_shape_score) {
-                    int shape_can_be_placed = 1;
-                    for (int y = 0; shape_can_be_placed && y < shape->height; ++y) {
-                        for (int x = 0; shape_can_be_placed && x < shape->width; ++x) {
-                            shape_can_be_placed = !possible_shapes[pizza_index + y * C + x].is_used;
+                    if (score > best_shape_score) {
+                        int shape_can_be_placed = 1;
+                        for (int y = 0; shape_can_be_placed && y < shape->height; ++y) {
+                            for (int x = 0; shape_can_be_placed && x < shape->width; ++x) {
+                                Data *data = &possible_shapes[pizza_index + y * C + x];
+                                shape_can_be_placed = !data->is_used;
+                                if (data->num_shapes > current_num_shapes) {
+                                    // a really weird place for this logic but it works.
+                                    score -= 2;
+                                }
+                            }
+                        }
+                        if (shape_can_be_placed) {
+                            best_shape_score = score;
+                            best_shape = shape;
                         }
                     }
-                    if (shape_can_be_placed) {
-                        best_shape_score = score;
-                        best_shape = shape;
-                    }
                 }
-            }
 
-            if (best_shape) {
-                if (num_slices + 1 > max_slices) {
-                    max_slices *= 2;
-                    slices = realloc(slices, max_slices * sizeof(Slice));
-                    if (!slices) {
-                        printf("out of memory");
-                        exit(1);
+                if (best_shape) {
+                    if (num_slices + 1 > max_slices) {
+                        max_slices *= 2;
+                        slices = realloc(slices, max_slices * sizeof(Slice));
+                        if (!slices) {
+                            printf("out of memory");
+                            exit(1);
+                        }
                     }
-                }
-                Slice *slice = slices + num_slices++;
-                slice->r1 = pizza_row;
-                slice->c1 = pizza_col;
-                slice->r2 = pizza_row + best_shape->height - 1;
-                slice->c2 = pizza_col + best_shape->width - 1;
+                    Slice *slice = slices + num_slices++;
+                    slice->r1 = pizza_row;
+                    slice->c1 = pizza_col;
+                    slice->r2 = pizza_row + best_shape->height - 1;
+                    slice->c2 = pizza_col + best_shape->width - 1;
 
-                for (int y = 0; y < best_shape->height; ++y) {
-                    for (int x = 0; x < best_shape->width; ++x) {
-                        possible_shapes[pizza_index + y * C + x].is_used = 1;
+                    for (int y = 0; y < best_shape->height; ++y) {
+                        for (int x = 0; x < best_shape->width; ++x) {
+                            possible_shapes[pizza_index + y * C + x].is_used = 1;
+                        }
                     }
                 }
             }
         }
     }
+
 
     {
         FILE *output = open_file_or_exit("inputs", file_index, ".out", "w");
@@ -376,18 +387,26 @@ void run(int file_index) {
                      PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
         png_write_info(png_ptr, info_ptr);
 
+        int score = 0;
         png_bytep row = malloc_or_exit(C);
         for (int pizza_row = 0; pizza_row < R; ++pizza_row) {
             for (int pizza_col = 0; pizza_col < C; ++pizza_col) {
                 int pizza_index = pizza_row * C + pizza_col;
                 Data d = possible_shapes[pizza_index];
-                row[pizza_col] = (unsigned char) (d.is_used ? 0 : -1);
+                if (d.is_used) {
+                    row[pizza_col] = 0;
+                    ++score;
+                } else {
+                    row[pizza_col] = 255;
+                }
             }
             png_write_row(png_ptr, row);
         }
 
         png_write_end(png_ptr, NULL);
         fclose(fp);
+
+        printf("Score: %d\n", score);
     }
 
 

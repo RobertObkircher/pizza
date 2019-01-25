@@ -12,6 +12,6 @@ Current score
 
 - Small 35
 
-- Medium 48480
+- Medium 48480, 49509 
 
-- Big 890445
+- Big 890445, 897164 
