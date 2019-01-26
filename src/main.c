@@ -365,7 +365,7 @@ void run(const char *filename) {
             // select a few starting positions
             // 5 works well for big
             // 897497
-            int size = 5;
+            int size = 4;
             int look_before = 0;
             for (int start_y = max(0, closest_to_top_left_y - look_before);
                  start_y < closest_to_top_left_y + size && start_y < R; ++start_y) {
@@ -454,9 +454,10 @@ void run(const char *filename) {
                             solve_recursive_locations_count = num_locations;
                             solve_recursive(0);
 //                            if (solve_recursive_leftovers < best_shape_leftovers) {
-                            if (solve_recursive_score > best_shape_score) {
+                            int area = shape->width * shape->height;
+                            if (solve_recursive_score * area > best_shape_score) {
 //                                best_shape_leftovers = solve_recursive_leftovers;
-                                best_shape_score = solve_recursive_score;
+                                best_shape_score = solve_recursive_score * area;
                                 slice.r1 = start_y;
                                 slice.c1 = start_x;
                                 slice.r2 = shape_end_y - 1;
