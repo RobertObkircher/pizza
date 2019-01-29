@@ -364,7 +364,7 @@ void run(const char *filename) {
 
             // select a few starting positions
             // 5 works well for big
-            int size = 5;
+            int size = 4;
             int look_before = 0;
             for (int start_y = max(0, closest_to_top_left_y - look_before);
                  start_y < closest_to_top_left_y + size && start_y < R; ++start_y) {
@@ -403,8 +403,9 @@ void run(const char *filename) {
                             unsigned int num_locations = 0;
                             int locations_x[4 * H + 4];
                             int locations_y[4 * H + 4];
+                            int border_size = 3;
                             {
-                                for (int i = 0; i < 2; ++i) {
+                                for (int i = 0; i < border_size; ++i) {
                                     int below = shape_end_y + i;
                                     if (below < R) {
                                         for (int x = start_x; x < shape_end_x; ++x) {
@@ -417,7 +418,7 @@ void run(const char *filename) {
                                         }
                                     }
                                 }
-                                for (int i = 0; i < 2; ++i) {
+                                for (int i = 0; i < border_size; ++i) {
                                     int right = shape_end_x + i;
                                     if (right < C) {
                                         for (int y = start_y; y < shape_end_y; ++y) {
