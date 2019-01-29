@@ -18,8 +18,8 @@ Current score
 
 ### main.c
 
-- Medium 48851 
+- Medium 48887 
 
-- Big 902170 
+- Big 902584 
 
 (~3 seconds for all 4 input files)

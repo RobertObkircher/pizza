@@ -74,27 +74,17 @@ static int *solve_recursive_locations_x;
 static int *solve_recursive_locations_y;
 static int solve_recursive_locations_count;
 
-//static double solve_recursive_shape_size;
-//static double solve_recursive_leftovers;
 static int solve_recursive_score;
 
-static void solve_recursive(int index) {
+static void solve_recursive(int index, int area) {
     if (index == solve_recursive_locations_count) {
         // check if new top score
-        int score = 0;
-        unsigned int leftovers = 0;
+        int score = area/2;
         for (int i = 0; i < solve_recursive_locations_count; ++i) {
             Data *data = &shape_data[solve_recursive_locations_y[i] * C + solve_recursive_locations_x[i]];
             if (data->is_used)
                 ++score;
-            else
-                ++leftovers;
         }
-
-//        double leftovers_percent = leftovers / solve_recursive_shape_size;
-//
-//        if (leftovers_percent < solve_recursive_leftovers)
-//            solve_recursive_leftovers = leftovers_percent;
         if (score > solve_recursive_score)
             solve_recursive_score = score;
     } else {
@@ -104,7 +94,7 @@ static void solve_recursive(int index) {
         Data *data = &shape_data[start_y * C + start_x];
 
         // not picking this location is always an option
-        solve_recursive(index + 1);
+        solve_recursive(index + 1, area);
 
         if (data->is_used)
             return;
@@ -135,7 +125,7 @@ static void solve_recursive(int index) {
             }
 
             // recursion
-            solve_recursive(index + 1);
+            solve_recursive(index + 1, area + shape->width * shape->height);
 
             // remove shape
             for (int y = start_y; y < shape_end_y; ++y) {
@@ -359,7 +349,6 @@ void run(const char *filename) {
         while (closest_to_top_left_x >= 0 && closest_to_top_left_y < R) {
 
             Slice slice = {};
-//            double best_shape_leftovers = 2.0;
             int best_shape_score = -1;
 
             // select a few starting positions
@@ -401,6 +390,7 @@ void run(const char *filename) {
                             // generate list of location below and to the right
                             // 2 cells border:
                             unsigned int num_locations = 0;
+                            unsigned int bonus_points = 0;
                             int border_size = 3;
                             int locations_x[2 * border_size * H + border_size]; // this is larger than needed
                             int locations_y[2 * border_size * H + border_size];
@@ -416,6 +406,8 @@ void run(const char *filename) {
                                                 ++num_locations;
                                             }
                                         }
+                                    } else {
+                                        bonus_points += shape->width;
                                     }
                                 }
                                 for (int i = 0; i < border_size; ++i) {
@@ -429,6 +421,8 @@ void run(const char *filename) {
                                                 ++num_locations;
                                             }
                                         }
+                                    } else {
+                                        bonus_points += shape->height;
                                     }
                                 }
                                 // only one cell in the bottom right corner is better than 4
@@ -436,23 +430,21 @@ void run(const char *filename) {
                                     locations_x[num_locations] = shape_end_x;
                                     locations_y[num_locations] = shape_end_y;
                                     ++num_locations;
+                                } else {
+                                    ++bonus_points;
                                 }
                             }
 
-                            /*
-                            solve_recursive_leftovers = 2.0;
-                            solve_recursive_shape_size = (shape->width + 2) * (shape->height + 2);
-                             */
                             solve_recursive_score = 0;
                             solve_recursive_locations_x = locations_x;
                             solve_recursive_locations_y = locations_y;
                             solve_recursive_locations_count = num_locations;
-                            solve_recursive(0);
-//                            if (solve_recursive_leftovers < best_shape_leftovers) {
+                            solve_recursive(0, 0);
                             int area = shape->width * shape->height;
-                            if (solve_recursive_score * area > best_shape_score) {
-//                                best_shape_leftovers = solve_recursive_leftovers;
-                                best_shape_score = solve_recursive_score * area;
+                            solve_recursive_score += bonus_points;
+
+                            if (solve_recursive_score > best_shape_score) {
+                                best_shape_score = solve_recursive_score;
                                 slice.r1 = start_y;
                                 slice.c1 = start_x;
                                 slice.r2 = shape_end_y - 1;
@@ -473,7 +465,6 @@ void run(const char *filename) {
             }
 
             // add slices to output
-//            if (best_shape_leftovers <= 1) {
             if (best_shape_score >= 0) {
                 if (num_slices + 1 > max_slices) {
                     max_slices *= 2;
