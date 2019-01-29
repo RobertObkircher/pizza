@@ -401,9 +401,9 @@ void run(const char *filename) {
                             // generate list of location below and to the right
                             // 2 cells border:
                             unsigned int num_locations = 0;
-                            int locations_x[4 * H + 4];
-                            int locations_y[4 * H + 4];
                             int border_size = 3;
+                            int locations_x[2 * border_size * H + border_size]; // this is larger than needed
+                            int locations_y[2 * border_size * H + border_size];
                             {
                                 for (int i = 0; i < border_size; ++i) {
                                     int below = shape_end_y + i;
