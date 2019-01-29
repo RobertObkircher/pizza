@@ -364,8 +364,7 @@ void run(const char *filename) {
 
             // select a few starting positions
             // 5 works well for big
-            // 897497
-            int size = 4;
+            int size = 5;
             int look_before = 0;
             for (int start_y = max(0, closest_to_top_left_y - look_before);
                  start_y < closest_to_top_left_y + size && start_y < R; ++start_y) {
@@ -431,16 +430,11 @@ void run(const char *filename) {
                                         }
                                     }
                                 }
-                                for (int i = 0; i < 2; ++i) {
-                                    int below = shape_end_y + i;
-                                    for (int j = 0; j < 2; ++j) {
-                                        int right = shape_end_x + i;
-                                        if (below < R && right < C) {
-                                            locations_x[num_locations] = right;
-                                            locations_y[num_locations] = below;
-                                            ++num_locations;
-                                        }
-                                    }
+                                // only one cell in the bottom right corner is better than 4
+                                if (shape_end_y < R && shape_end_x < C) {
+                                    locations_x[num_locations] = shape_end_x;
+                                    locations_y[num_locations] = shape_end_y;
+                                    ++num_locations;
                                 }
                             }
 
